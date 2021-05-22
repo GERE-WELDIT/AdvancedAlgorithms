@@ -2,49 +2,6 @@ import random
 import math
 
 
-def modular_exponent(a, c, n):
-    """required task is (a^c)mod n"""
-    r = 1  # remainder after each iteration of modular exponentiation
-    b = (bin(c))[2:]  # binary respresentation of b
-    for i in b:
-        r = r * r % n
-        if int(i) == 1:
-            r = r * a % n
-    return r
-
-
-def generateRandomInt(n):
-    """returns a random integer a such that 2 <= a <= n-2 """
-    return random.randint(1, n - 2)
-
-
-def miller_rabin_primeTest():
-    n = int(input("Enter an odd integer: "))
-    s = 20  # 100 rounds/trials are performed
-    if n % 2 == 0:  # if n is even => receive input again
-        miller_rabin_primeTest()
-    else:  # write n-1 = 2^t * u
-        n_1 = n - 1
-
-    t = 0
-    while n_1 % 2 == 0:
-        t += 1
-        n_1 = n_1 >> 1  # divide n-1 by 2^1
-    u = (n - 1) >> t  # divide n-1 by 2^t
-    print(f"t = {t}, u = {u}")
-    for i in range(s):  # Witness loop perform s trials
-        a = generateRandomInt(n)
-        x = [modular_exponent(a, u, n)]  # x0
-
-        for j in range(1, t + 1):  # it should iterate t - 1 times
-            x.append(x[j - 1] ** 2 % n)
-            if x[j] == 1 and x[j - 1] != 1 and x[j - 1] != (n - 1):
-                return "composite"
-        if x[t] != 1:
-            return "composite"  # n is definitely composite
-    return "prime"
-
-
 class RSACryptoSystem:
     def __init__(self, bit_size):
         self.p = 0
