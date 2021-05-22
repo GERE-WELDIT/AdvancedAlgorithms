@@ -42,7 +42,7 @@ class RSACryptoSystem:
         """
 
         if n % 2 == 0:  # if n is even => receive input again
-            miller_rabin_primeTest()
+            return "composite"
         else:  # write n-1 = 2^t * u
             n_1 = n - 1
 
@@ -55,8 +55,8 @@ class RSACryptoSystem:
 
         s = 20  # 100 rounds/trials are performed
         for i in range(s):  # Witness loop perform s trials
-            a = generateRandomInt(n)
-            x = [modular_exponent(a, u, n)]  # x0
+            a = self.generateRandomInt(n)
+            x = [self.modular_exponent(a, u, n)]  # x0
 
             for j in range(1, t + 1):  # it should iterate t - 1 times
                 x.append(x[j - 1] ** 2 % n)
