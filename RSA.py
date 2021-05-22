@@ -5,19 +5,9 @@ import sys
 
 class RSACryptoSystem:
     def __init__(self):
-        self.p = 0
-        self.q = 0
-        self.n = self.p * self.q
-        self.rP = 0
-        self.e = 0
-        self.d = 0
         self.nBits = 5  # the max prime number limit ( 512 bits - 1024 bits etc)
-        self.number = 0
-        self.privateKey = (self.d, self.n)
-        self.publicKey = (self.e, self.n)
-        self.sp = (
-            2 ** self.nBits
-        )  # prime value start from N bits to users set nBits Size
+        self.privateKey = None
+        self.publicKey = None
 
     def generate_odd_int(self):
         """returns an odd integer with a bit size of nBits"""
@@ -26,7 +16,7 @@ class RSACryptoSystem:
         return x
 
     def generatePrimes(self):
-        """generate a prime number"""
+        """generate p, and q prime number"""
         p, q = 0, 0
         print("n_bits", self.nBits)
         for i in range(1, 3):
@@ -54,7 +44,6 @@ class RSACryptoSystem:
             t += 1
             n_1 = n_1 >> 1  # divide n-1 by 2^1
         u = (n - 1) >> t  # divide n-1 by 2^t, faster
-        print(f"t = {t}, u = {u}")
 
         s = 20  # 100 rounds/trials are performed
         for i in range(s):  # Witness loop perform s trials
@@ -106,28 +95,25 @@ class RSACryptoSystem:
 
     def generateKeyPairs(self, p, q):
         """get a small e which is a relative prime to rp = (p-1)*(q-1).
-        Then, find generate private and public keys.
+        Then, generate private and public keys.
         """
-        self.p = p
-        self.q = q
-        print("p,q =", p, q)
-
-        self.rP = (self.p - 1) * (self.q - 1)  # get the co-prime, Q(n)
-        possiblePublicKeys = []
-        for e in range(2, self.rP):
-            if self.gcd(e, self.rP) == 1:
+        rP = (p - 1) * (q - 1)  # get the relative co-prime, Q(n)
+        possiblePublicKeys = []  # for big nBits,  huge memory
+        for e in range(2, rP):  # O(n)
+            if self.gcd(e, rP) == 1:
                 possiblePublicKeys.append(e)
+                if len(possiblePublicKeys) == 100:
+                    break
         # pick random e from possible public keys
-        self.e = random.choice(possiblePublicKeys)
+        e = random.choice(possiblePublicKeys)
 
-        self.d = self.moduloInverse()
-        while not self.d:  # if the picked e has no inverse
+        d = self.moduloInverse(e, rP)
+        while not d:  # if the picked e has no inverse
             self.e = random.choice(possiblePublicKeys)
-            self.d = self.moduloInverse()
-
-        self.privateKey = (self.d, self.p * self.q)
-        self.publicKey = (self.e, self.p * self.q)
-        # print(f'possible public keys(e)= {self.possiblePublicKeys}')
+            self.d = self.moduloInverse(e, rP)
+        n = p * q
+        self.privateKey = (d, n)
+        self.publicKey = (e, n)
         return self.privateKey, self.publicKey
 
     def encryptMessage(self, M, e, n):
