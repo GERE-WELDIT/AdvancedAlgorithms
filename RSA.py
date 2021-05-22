@@ -1,16 +1,17 @@
 import random
 import math
+import sys
 
 
 class RSACryptoSystem:
-    def __init__(self, bit_size):
+    def __init__(self):
         self.p = 0
         self.q = 0
         self.n = self.p * self.q
         self.rP = 0
         self.e = 0
         self.d = 0
-        self.nBits = bit_size  # the max prime number limit ( 512 bits - 1024 bits etc)
+        self.nBits = 5  # the max prime number limit ( 512 bits - 1024 bits etc)
         self.number = 0
         self.privateKey = (self.d, self.n)
         self.publicKey = (self.e, self.n)
@@ -20,35 +21,33 @@ class RSACryptoSystem:
 
     def generate_odd_int(self):
         """returns an odd integer with a bit size of nBits"""
-        x = [
-            i if i % 2 else i + 1
-            for i in range(2 << (self.nBits - 2), 2 << (self.nBits))
-        ]
+        # Select odd numbers only in the range of 2^(n-1) to (2^n) -1
+        x = random.randrange((2 << (self.nBits - 2)) + 1, 2 << (self.nBits - 1), 2)
+        return x
 
-        random.shuffle(x)
-        return random.choice(
-            x
-        )  # return a random int from list of random,but shuffled off integers
-
-    def generate_prime(self):
+    def generatePrimes(self):
         """generate a prime number"""
-        x = self.generate_odd_int()
-        print(f"x= {x}")
-        p, q = 0, 0  # what is the purpose here
-        value = self.miller_rabin_primeTest(x)
-        while not (value[0] == "prime"):
+        p, q = 0, 0
+        print("n_bits", self.nBits)
+        for i in range(1, 3):
+            x = self.generate_odd_int()
             value = self.miller_rabin_primeTest(x)
-        return value[0]
+            while not (value == "prime" and x != p):
+                x = self.generate_odd_int()
+                value = self.miller_rabin_primeTest(x)
+            if i == 1:
+                p = x
+            else:
+                q = x
+
+        return p, q
 
     def miller_rabin_primeTest(self, n):
         """Miller - Rabin Primality testing Algs.
         Returns Composite(for sure) or prime with low probable error.
         """
-
-        if n % 2 == 0 and n != 2:  # if n is even => receive input again
-            return "composite"
-        else:  # write n-1 = 2^t * u
-            n_1 = n - 1
+        # write n-1 = 2^t * u
+        n_1 = n - 1
 
         t = 0
         while n_1 % 2 == 0:
@@ -68,7 +67,7 @@ class RSACryptoSystem:
                     return "composite"
             if x[t] != 1:
                 return "composite"  # n is definitely composite
-        return "prime", n
+        return "prime"
 
     def modular_exponent(self, a, c, n):
         """required task is (a^c)mod n"""
@@ -90,20 +89,22 @@ class RSACryptoSystem:
             return a
         return self.gcd(b, a % b)
 
-    def moduloInverse(self):
-        """returns modulo / multiplicative inverse of e such that e*d ≡ 1 (mod rP).
-        Where rP  = (p-1) * (q-1).
-         rP refers to total number of co-primes relative to n = p*q.
-        """
-        for d in range(
-            2, self.rP
-        ):  # might need a faster method similar to the homework
-            if (self.e * d % self.rP) == 1:
-                return d  # return the multiplicative inverse of
-                # probably gcd(e*d,rP)?
-                # Eclid's extended algorithm...."Live Audio Extension Pack , we can speak while coding"
+    def etx_gcd(self, a, b):
+        """ extended euclid Alg."""
+        if b == 0:
+            return a, 1, 0
+        gcd, x, y = self.etx_gcd(b, a % b)
+        gcd, x, y = gcd, y, x - a // b * y
+        return gcd, x, y
 
-    def generateRSAKeyPairs(self, p, q):
+    def moduloInverse(self, e, rP):
+        """ return integer d such that d = m^-1 mod n =  gcd(m*d, rP) == 1 """
+        gcd, x, y = self.etx_gcd(e, rP)
+        if gcd == 1:
+            return x % rP
+        return False  # in case no inverse
+
+    def generateKeyPairs(self, p, q):
         """get a small e which is a relative prime to rp = (p-1)*(q-1).
         Then, find generate private and public keys.
         """
@@ -118,57 +119,72 @@ class RSACryptoSystem:
                 possiblePublicKeys.append(e)
         # pick random e from possible public keys
         self.e = random.choice(possiblePublicKeys)
+
         self.d = self.moduloInverse()
+        while not self.d:  # if the picked e has no inverse
+            self.e = random.choice(possiblePublicKeys)
+            self.d = self.moduloInverse()
 
         self.privateKey = (self.d, self.p * self.q)
         self.publicKey = (self.e, self.p * self.q)
         # print(f'possible public keys(e)= {self.possiblePublicKeys}')
+        return self.privateKey, self.publicKey
 
-    def encryptMessage(self, M):
+    def encryptMessage(self, M, e, n):
         """compute exponentation M**e mod n efficienly. Binary implementation """
-        e = self.publicKey[0]
-        n = self.publicKey[1]
+
         encryptedMessage = self.modular_exponent(M, e, n)  # M ** e % n
         return encryptedMessage
 
-    def decryptMessage(self, C):
+    def decryptMessage(self, C, d, n):
         """decrypts a ciphered/encrypted message C.
         compute exponentation M**e efficienly. Tutorial /24/03/2021 @ 1:04:00
         """
-        d = self.privateKey[0]
-        n = self.privateKey[1]
         decryptedMessage = self.modular_exponent(C, d, n)  # C ** d % n
         return decryptedMessage
 
-
-def get_Int():
-    """returns if input N is an integer"""
-    bit_size = int(input("Enter the bit size:"))  # N bits integers or N = 512 bits
-    return bit_size
+    def get_bitSize(self):
+        """returns if input N is an integer"""
+        bit_size = int(input("Enter the bit size:"))  # N bits integers or N = 512 bits
+        self.nBits = bit_size
 
 
 def main():
     # get bit size of the prime numbers
-    count = 0
-    bit_size = get_Int()
-    rsa = RSACryptoSystem(bit_size)  # create RSA object
-    p = rsa.generate_prime()
-    q = rsa.generate_prime()
-    while p == q:
-        q = rsa.generate_prime()
-    # p = 113  # We need to find p and q using random_odd_int() and miller-rabin algs, & generate_prime()
-    # q = 97
-    print(f"p ={p},q ={q}")
-    # rsa.generateRSAKeyPairs(p, q)  # generate private and public keys
-    # message = 250  # plain text message  , message should be less than n = p*q
-    # encMessage = rsa.encryptMessage(message)  # encrypted message
-    # decMessage = rsa.decryptMessage(encMessage)  # decrypted message
-    # print(f"Decrypted Message = {decMessage}, Original Message: {message}")
+    rsa = RSACryptoSystem()  # create RSA object
 
-    # print(
-    #     f"p = {rsa.p}, q = {rsa.q}, private key = {rsa.privateKey}, publicKey = {rsa.publicKey}"
-    # )
+    choice = input(
+        "Enter 'e' for encryption,'d' for decryption or 'g' to generate keys:"
+    )
+    if choice == "e":
+        message, e, n = input("inter message, e, and n:").split(" ")
+        message, e, n = int(message), int(e), int(n)
+
+        encyptedMessage = rsa.encryptMessage(message, e, n)
+        print(f" Encrypted Message = {encyptedMessage}")
+
+    elif choice == "d":
+        message, d, n = input("Enter Message, d, and n:").split(" ")
+        message, d, n = int(message), int(d), int(n)
+        decryptedMessage = rsa.decryptMessage(message, d, n)
+        print(f" Encrypted Message = {decryptedMessage}")
+
+    elif choice == "g":
+        # get bit_size input
+        rsa.get_bitSize()
+
+        p, q = rsa.generatePrimes()
+        print(f"p {p},q = {q}")
+
+        privateKey, publicKey = rsa.generateKeyPairs(p, q)
+        print(f"private key : {privateKey}, public key : {publicKey}")
+    elif choice == "x":
+        sys.exit()
+    else:
+        print("Enter correct choice.")
 
 
 if __name__ == "__main__":
-    main()
+    while True:
+        main()
+
