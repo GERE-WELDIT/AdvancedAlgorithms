@@ -20,7 +20,11 @@ class RSACryptoSystem:
 
     def generate_odd_int(self):
         """returns an odd integer with a bit size of nBits"""
-        x = [i if i % 2 else i + 1 for i in range(2 ** self.nBits, 2 ** self.nBits + 1)]
+        x = [
+            i if i % 2 else i + 1
+            for i in range(2 << (self.nBits - 2), 2 << (self.nBits))
+        ]
+
         random.shuffle(x)
         return random.choice(
             x
@@ -30,7 +34,7 @@ class RSACryptoSystem:
         """generate a prime number"""
         x = self.generate_odd_int()
         print(f"x= {x}")
-        p, q = 0, 0
+        p, q = 0, 0  # what is the purpose here
         value = self.miller_rabin_primeTest(x)
         while not (value[0] == "prime"):
             value = self.miller_rabin_primeTest(x)
@@ -41,7 +45,7 @@ class RSACryptoSystem:
         Returns Composite(for sure) or prime with low probable error.
         """
 
-        if n % 2 == 0:  # if n is even => receive input again
+        if n % 2 == 0 and n != 2:  # if n is even => receive input again
             return "composite"
         else:  # write n-1 = 2^t * u
             n_1 = n - 1
@@ -50,7 +54,7 @@ class RSACryptoSystem:
         while n_1 % 2 == 0:
             t += 1
             n_1 = n_1 >> 1  # divide n-1 by 2^1
-        u = (n - 1) >> t  # divide n-1 by 2^t
+        u = (n - 1) >> t  # divide n-1 by 2^t, faster
         print(f"t = {t}, u = {u}")
 
         s = 20  # 100 rounds/trials are performed
@@ -91,9 +95,13 @@ class RSACryptoSystem:
         Where rP  = (p-1) * (q-1).
          rP refers to total number of co-primes relative to n = p*q.
         """
-        for d in range(2, self.rP):
+        for d in range(
+            2, self.rP
+        ):  # might need a faster method similar to the homework
             if (self.e * d % self.rP) == 1:
-                return d  # return the multiplicative inverse of e
+                return d  # return the multiplicative inverse of
+                # probably gcd(e*d,rP)?
+                # Eclid's extended algorithm...."Live Audio Extension Pack , we can speak while coding"
 
     def generateRSAKeyPairs(self, p, q):
         """get a small e which is a relative prime to rp = (p-1)*(q-1).
@@ -144,25 +152,23 @@ def main():
     count = 0
     bit_size = get_Int()
     rsa = RSACryptoSystem(bit_size)  # create RSA object
-    # p = rsa.generate_prime()
-    # q = rsa.generate_prime()
-    # while p == q:
-    #     q = rsa.generate_prime()
+    p = rsa.generate_prime()
+    q = rsa.generate_prime()
+    while p == q:
+        q = rsa.generate_prime()
+    # p = 113  # We need to find p and q using random_odd_int() and miller-rabin algs, & generate_prime()
+    # q = 97
+    print(f"p ={p},q ={q}")
+    # rsa.generateRSAKeyPairs(p, q)  # generate private and public keys
+    # message = 250  # plain text message  , message should be less than n = p*q
+    # encMessage = rsa.encryptMessage(message)  # encrypted message
+    # decMessage = rsa.decryptMessage(encMessage)  # decrypted message
+    # print(f"Decrypted Message = {decMessage}, Original Message: {message}")
 
-    p = 113
-    q = 97
-
-    rsa.generateRSAKeyPairs(p, q)  # generate private and public keys
-    message = 250  # plain text message  , message should be less than n = p*q
-    encMessage = rsa.encryptMessage(message)  # encrypted message
-    decMessage = rsa.decryptMessage(encMessage)  # decrypted message
-    print(f"Decrypted Message = {decMessage}, Original Message: {message}")
-
-    print(
-        f"p = {rsa.p}, q = {rsa.q}, private key = {rsa.privateKey}, publicKey = {rsa.publicKey}"
-    )
+    # print(
+    #     f"p = {rsa.p}, q = {rsa.q}, private key = {rsa.privateKey}, publicKey = {rsa.publicKey}"
+    # )
 
 
 if __name__ == "__main__":
     main()
-
