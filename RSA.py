@@ -1,5 +1,4 @@
 import random
-import math
 import sys
 
 
@@ -8,6 +7,26 @@ class RSACryptoSystem:
         self.nBits = 5  # the max prime number limit ( 512 bits - 1024 bits etc)
         self.privateKey = None
         self.publicKey = None
+
+    def modular_exponent(self, a, c, n):
+        """required task is (a^c)mod n"""
+        r = 1  # remainder after each iteration of modular exponentiation
+        b = (bin(c))[2:]  # binary respresentation of b
+        for i in b:
+            r = r * r % n
+            if int(i) == 1:
+                r = r * a % n
+        return r
+
+    def generateRandomInt(n):
+        """returns a random integer a such that 2 <= a <= n-2 """
+        return random.randint(1, n - 2)
+
+    def gcd(self, a, b):
+        """returns greater common divisor of a and b."""
+        if b == 0:
+            return a
+        return self.gcd(b, a % b)
 
     def generate_odd_int(self):
         """returns an odd integer with a bit size of nBits"""
@@ -58,26 +77,6 @@ class RSACryptoSystem:
                 return "composite"  # n is definitely composite
         return "prime"
 
-    def modular_exponent(self, a, c, n):
-        """required task is (a^c)mod n"""
-        r = 1  # remainder after each iteration of modular exponentiation
-        b = (bin(c))[2:]  # binary respresentation of b
-        for i in b:
-            r = r * r % n
-            if int(i) == 1:
-                r = r * a % n
-        return r
-
-    def generateRandomInt(self, n):
-        """returns a random integer a such that 2 <= a <= n-2 """
-        return random.randint(1, n - 2)
-
-    def gcd(self, a, b):
-        """returns greater common divisor of a and b."""
-        if b == 0:
-            return a
-        return self.gcd(b, a % b)
-
     def etx_gcd(self, a, b):
         """ extended euclid Alg."""
         if b == 0:
@@ -109,22 +108,22 @@ class RSACryptoSystem:
 
         d = self.moduloInverse(e, rP)
         while not d:  # if the picked e has no inverse
-            self.e = random.choice(possiblePublicKeys)
-            self.d = self.moduloInverse(e, rP)
+            e = random.choice(possiblePublicKeys)
+            d = self.moduloInverse(e, rP)
         n = p * q
         self.privateKey = (d, n)
         self.publicKey = (e, n)
         return self.privateKey, self.publicKey
 
     def encryptMessage(self, M, e, n):
-        """compute exponentation M**e mod n efficienly. Binary implementation """
+        """compute exponentiation M**e mod n efficienly. Binary implementation """
 
         encryptedMessage = self.modular_exponent(M, e, n)  # M ** e % n
         return encryptedMessage
 
     def decryptMessage(self, C, d, n):
         """decrypts a ciphered/encrypted message C.
-        compute exponentation M**e efficienly. Tutorial /24/03/2021 @ 1:04:00
+        compute mod exponentiation M**e mod n
         """
         decryptedMessage = self.modular_exponent(C, d, n)  # C ** d % n
         return decryptedMessage
@@ -147,7 +146,7 @@ def main():
         message, e, n = int(message), int(e), int(n)
 
         encyptedMessage = rsa.encryptMessage(message, e, n)
-        print(f" Encrypted Message = {encyptedMessage}")
+        print(f" Encrypted Message: = {encyptedMessage}")
 
     elif choice == "d":
         message, d, n = input("Enter Message, d, and n:").split(" ")
