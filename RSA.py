@@ -18,7 +18,7 @@ class RSACryptoSystem:
                 r = r * a % n
         return r
 
-    def generateRandomInt(n):
+    def generateRandomInt(self, n):
         """returns a random integer a such that 2 <= a <= n-2 """
         return random.randint(1, n - 2)
 
@@ -37,7 +37,7 @@ class RSACryptoSystem:
     def generatePrimes(self):
         """generate p, and q prime number"""
         p, q = 0, 0
-        print("n_bits", self.nBits)
+
         for i in range(1, 3):
             x = self.generate_odd_int()
             value = self.miller_rabin_primeTest(x)
