@@ -88,9 +88,8 @@ class RSACryptoSystem:
     def moduloInverse(self, e, rP):
         """ return integer d such that d = m^-1 mod n =  gcd(m*d, rP) == 1 """
         gcd, x, y = self.etx_gcd(e, rP)
-        if gcd == 1:
-            return x % rP
-        return False  # in case no inverse
+        # if gcd == 1:
+        return x % rP
 
     def generateKeyPairs(self, p, q):
         """get a small e which is a relative prime to rp = (p-1)*(q-1).
@@ -107,9 +106,9 @@ class RSACryptoSystem:
         e = random.choice(possiblePublicKeys)
 
         d = self.moduloInverse(e, rP)
-        while not d:  # if the picked e has no inverse
-            e = random.choice(possiblePublicKeys)
-            d = self.moduloInverse(e, rP)
+        # while not d:  # if the picked e has no inverse
+        #     e = random.choice(possiblePublicKeys)
+        #     d = self.moduloInverse(e, rP)
         n = p * q
         self.privateKey = (d, n)
         self.publicKey = (e, n)
