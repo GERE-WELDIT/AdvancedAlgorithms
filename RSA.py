@@ -37,7 +37,6 @@ class RSACryptoSystem:
     def generatePrimes(self):
         """generate p, and q prime number"""
         p, q = 0, 0
-
         for i in range(1, 3):
             x = self.generate_odd_int()
             value = self.miller_rabin_primeTest(x)
@@ -52,25 +51,26 @@ class RSACryptoSystem:
         return p, q
 
     def miller_rabin_primeTest(self, n):
-        """Miller - Rabin Primality testing Algs.
-        Returns Composite(for sure) or prime with low probable error.
+        """Miller - Rabin Primality testing Algorithm.
+        Returns Composite(for sure) or prime with low probable error: 2^-s.
+        Where s is the number of trials.
         """
         # write n-1 = 2^t * u
         n_1 = n - 1
-
         t = 0
         while n_1 % 2 == 0:
             t += 1
             n_1 = n_1 >> 1  # divide n-1 by 2^1
         u = (n - 1) >> t  # divide n-1 by 2^t, faster
 
-        s = 20  # 100 rounds/trials are performed
+        s = 100  # 100 rounds/trials are performed
         for i in range(s):  # Witness loop perform s trials
             a = self.generateRandomInt(n)
             x = [self.modular_exponent(a, u, n)]  # x0
 
-            for j in range(1, t + 1):  # it should iterate t - 1 times
+            for j in range(1, t + 1):  # it  iterates t - 1 times
                 x.append(x[j - 1] ** 2 % n)
+                # x.append(self.modular_exponent(x[j - 1], 2, n))  # x0
                 if x[j] == 1 and x[j - 1] != 1 and x[j - 1] != (n - 1):
                     return "composite"
             if x[t] != 1:
@@ -104,12 +104,10 @@ class RSACryptoSystem:
                     break
         # pick random e from possible public keys
         e = random.choice(possiblePublicKeys)
-
+        # get d which is inverse of e
         d = self.moduloInverse(e, rP)
-        # while not d:  # if the picked e has no inverse
-        #     e = random.choice(possiblePublicKeys)
-        #     d = self.moduloInverse(e, rP)
         n = p * q
+        # private and public key pairs
         self.privateKey = (d, n)
         self.publicKey = (e, n)
         return self.privateKey, self.publicKey
